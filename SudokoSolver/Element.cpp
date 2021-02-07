@@ -9,16 +9,15 @@ namespace Sudoko
     int  Element::getNextEmptyLoc()
     {
         int result = -1;
-        if (loc_empty.size() == 0)
+        if ((loc_empty.size() == 0) || (itr > loc_empty.size()))
         {
             return result;
         }
-
-        if (itr == loc_empty.size())
+        else
         {
-            itr = 0;
+            result = itr++;
         }
-        result = itr++;
+ 
         return result;
     }
     void Element::fillLoc(int itr)
@@ -32,8 +31,21 @@ namespace Sudoko
             loc_fixed.push_back(ele);
         }
     }
-    Element::Element() :itr(-1)
+    int Element::getEmptyLoc(std::pair<int, int> pos)
     {
+        int index = 0;
+        for (auto x : loc_empty)
+        {
+            if (x == pos)
+            {
+                return index;
+            }
+            index++;
+        }
+    }
+    Element::Element()
+    {
+        itr = 0;
         loc_fixed.clear();
         loc_empty.clear();
     }

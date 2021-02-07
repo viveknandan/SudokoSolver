@@ -27,7 +27,7 @@ namespace Sudoko
 		void searchElement(T ele, bool whereItExist, std::vector< std::pair<int, int>>& result);
 
 		T operator()(Pos<P>& pos);
-
+		
 		~Grid();
 
 	private:
@@ -57,15 +57,15 @@ namespace Sudoko
 				}
 				else
 				{
-					if (whereItExist == false)
+					if (whereItExist == false && _grid[i - 1][j - 1] == '.')
 					{
-						result.push_back(loc);
+						result.push_back(loc);	
 					}
 				}
 
 			}
 		}
-	}
+	};
 
 	template <class P, class T>
 	T Grid<P, T>::operator()(Pos<P>& pos)
@@ -77,7 +77,7 @@ namespace Sudoko
 			result = _grid[pos.row()][pos.col()];
 		}
 		return result;
-	}
+	};
 
 	template<class P, class T>
 	Grid<P, T>::Grid() :_emptySymbol(static_cast<T>('.'))
@@ -158,7 +158,7 @@ namespace Sudoko
 		{
 			_grid[nRow - 1][nCol - 1] = _emptySymbol;
 		}
-	}
+	};
 
 	template<class P, class T>
 	void Grid<P, T>::movPos(Pos<P>& fromPos, Pos<P>& toPos)
@@ -172,7 +172,7 @@ namespace Sudoko
 			_grid[nRow2 - 1][nCol2 - 1] = _grid[nRow1 - 1][nCol1 - 1];
 			_grid[nRow1 - 1][nCol1 - 1] = _emptySymbol;
 		}
-	}
+	};
 
 	template<class P, class T>
 	void Grid<P, T>::copyPos(Pos<P>& fromPos, Pos<P>& toPos)
@@ -190,7 +190,7 @@ namespace Sudoko
 	template<class P, class T>
 	Grid<P, T>::~Grid()
 	{
-	}
+	};
 
 }
 #endif

@@ -13,12 +13,13 @@ namespace Sudoko
         //return idex at next empty location
         int  getNextEmptyLoc();
         void fillLoc(int itr);
+        int getEmptyLoc(std::pair<int, int>);
         Element();
         ~Element();
 
     private:
         //Iterator for traversing empty location
-        int itr;
+        size_t itr;
     };
 }
 #endif

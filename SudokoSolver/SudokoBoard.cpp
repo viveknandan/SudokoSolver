@@ -51,6 +51,8 @@ namespace Sudoko
         }
         return result;
     }
+
+    //Return number of open position
     int SudokoBoard::importState(char ele)
     {
         Element eleSt;
@@ -58,34 +60,62 @@ namespace Sudoko
         eleSt.val = ele;
         h1.searchElement(ele, true, eleSt.loc_fixed);
         h1.searchElement(ele, false, eleSt.loc_empty);
-        std::set<int> bar_rowIdx;
-        std::set<int> bar_colIdx;
+        std::set<int> bar_rowIdx; //blacklisted row index
+        std::set<int> bar_colIdx; //blacklisted col index
         for (auto itr : eleSt.loc_fixed)
         {
             bar_rowIdx.insert(itr.first);
             bar_colIdx.insert(itr.second);
         }
-        for (int i = 0; i < eleSt.loc_empty.size(); i++)
+
+        bool cnt = true;
+        int lp = 0;
+        while (cnt)
         {
-            //If empty location is present in barred state remove it
-            if (bar_rowIdx.find(eleSt.loc_empty[i].first) != bar_rowIdx.end())
+            lp = eleSt.loc_empty.size();
+            for (std::vector<std::pair<int, int>>::iterator itrp = eleSt.loc_empty.begin(); itrp < eleSt.loc_empty.end(); itrp++)
             {
-                eleSt.loc_empty.erase(eleSt.loc_empty.begin() + i);
+
+                int boxNr = getBoxNumber(*itrp);
+                std::pair<int, int> lloc = checkBoxContains(boxNr, ele);
+                if (!(lloc.first == -1 && lloc.second == -1))
+                {
+                    eleSt.loc_empty.erase(itrp);
+                    break;
+                }
+                
+                if (lp-- == 1)
+                {
+                    cnt = false;
+                }
             }
+            if (lp == 0)
+            {
+                cnt = false;
+            }
+            
         }
-        for (int i = 0; i < eleSt.loc_empty.size(); i++)
+        
+
+        std::vector<std::pair<int, int>>::iterator jptr = eleSt.loc_empty.begin();
+        while (jptr != eleSt.loc_empty.end()  )
         {
-            //If the empty location is present in bared list, erase it
-            if (bar_colIdx.find(eleSt.loc_empty[i].second) != bar_colIdx.end())
+            if (bar_rowIdx.find(jptr->first) != bar_rowIdx.end() || bar_colIdx.find(jptr->second) != bar_colIdx.end())
             {
-                eleSt.loc_empty.erase(eleSt.loc_empty.begin() + i);
+                eleSt.loc_empty.erase(jptr);
+                jptr = eleSt.loc_empty.begin();
             }
+            else
+            {
+                jptr++;
+            }
+            
         }
 
         nMore = (9 - eleSt.loc_fixed.size());
         if (nMore == 0)
         {
-            eleSt.loc_empty.clear();
+            //eleSt.loc_empty.clear();
         }
         //This assignment should be a deep copy i.e new copy of assigned object should persist event after eleSt is destroyed
         _listElements[ele] = eleSt;
@@ -168,28 +198,39 @@ namespace Sudoko
     bool SudokoBoard::elementCanExistAt(char ele, std::pair<int, int>& loc)
     {
         bool ret = false;
-        //Element can exist in its possible empty location
-        for (auto pos : _listElements[ele].loc_empty)
+        //Return if there are no positions left to fill.
+        if (_listElements[ele].loc_fixed.size() < 9)
         {
-            if (pos == loc)
+            //Element can exist in its possible empty location
+            for (auto pos : _listElements[ele].loc_empty)
             {
-                ret = true;
-                break;
-            }
-        }
-
-        for (auto pos : _listElements[ele].loc_fixed)
-        {
-            if (pos == loc)
-            {
-                ret = true;
-                break;
+                if (pos == loc)
+                {
+                        ret = true;
+                    break;
+                }
             }
         }
         return ret;
     }
 
-    //Elements with lowest rank should be solved first
+    void SudokoBoard::fillPos(char ele, std::pair<int, int>& loc)
+    {
+        Element ele_s = _listElements[ele];
+        //Get index of this pos
+        int idx = ele_s.getEmptyLoc(loc);
+ 
+        //FillPos
+        if (idx >= 0)
+        {
+            ele_s.fillLoc(idx);
+            _listElements[ele] = ele_s;
+            exportState(ele);
+            importState(ele);
+        }
+    }
+
+    //Elements with lowest rank( least number of to-be-filled positons)
     int SudokoBoard::getLowestRankers(std::vector<char>& result)
     {
         std::set<int> openPos;
@@ -222,6 +263,222 @@ namespace Sudoko
         return min;
     }
 
+    int SudokoBoard::getPossiblePositions(char ele, std::vector<std::pair<int, int>>& rPos)
+    {
+        Element ele_st = _listElements[ele];
+        rPos = ele_st.loc_empty;
+        return (9 - ele_st.loc_fixed.size());
+    }
+
+    void SudokoBoard::barPosition(char ele, std::pair<int, int>& loc)
+    {
+        Element ele_st = _listElements[ele];
+        for (std::vector<std::pair<int,int>>::iterator it = ele_st.loc_empty.begin(); it <= ele_st.loc_empty.end(); it++)
+        {
+            if (*it == loc)
+            {
+                ele_st.loc_empty.erase(it);
+                break;
+            }
+        }
+        _listElements[ele] = ele_st;
+    }
+
+    int SudokoBoard::getBoxNumber(std::pair<int, int>& pos)
+    {
+        int boxNr = 0;
+        if (pos.first <= 3)
+        {
+            if (pos.second <= 3)
+            {
+                //box1
+                boxNr = 1;
+            }
+            else if (pos.second <= 6)
+            {
+                //box2
+                boxNr = 2;
+            }
+            else
+            {
+                //box3
+                boxNr = 3;
+            }
+
+        }
+        else if (pos.first <= 6)
+        {
+            if (pos.second <= 3)
+            {
+                //box4
+                boxNr = 4;
+            }
+            else if (pos.second <= 6)
+            {
+                //box5
+                boxNr = 5;
+            }
+            else
+            {
+                //box6
+                boxNr = 6;
+            }
+        }
+        else
+        {
+            if (pos.second <= 3)
+            {
+                //box7
+                boxNr = 7;
+            }
+            else if (pos.second <= 6)
+            {
+                //box8
+                boxNr = 8;
+            }
+            else
+            {
+                //box9
+                boxNr = 9;
+            }
+        }
+        return boxNr;
+    }
+
+    //returns position of found element else {-1,-1}
+    std::pair<int,int> SudokoBoard::checkBoxContains(int boxNr, char ele)
+    {
+        std::pair<int, int> pos = { -1,-1 };
+        int row = 0;
+        int col = 0;
+        std::map<int, int> rowMap;
+        for (int i = 1; i <= 9; i++)
+        {
+            rowMap[i] = i;
+        }
+        int cor = 1;
+        Pos<int> p(rowMap, rowMap, cor);
+        switch (boxNr)
+        {
+        case 1:
+            row = 3;
+            col = 3;
+            break;
+        case 2:
+            row = 3;
+            col = 6;
+            break;
+        case 3:
+            row = 3;
+            col = 9;
+            break;
+        case 4:
+            row = 6;
+            col = 3;
+            break;
+        case 5:
+            row = 6;
+            col = 6;
+            break;
+        case 6:
+            row = 6;
+            col = 9;
+            break;
+        case 7:
+            row = 9;
+            col = 3;
+            break;
+        case 8:
+            row = 9;
+            col = 6;
+            break;
+        case 9:
+            row = 9;
+            col = 9;
+            break;
+        }
+
+        for (int i = row - 2; i <= row; i++)
+        {
+            for (int j = col - 2; j <= col; j++)
+            {
+
+                
+                if (ele == h1.readPos(p(i, j)))
+                {
+                    pos.first = i;
+                    pos.second = j;
+                    break;
+                }
+            }
+        }
+        return pos;
+    }
+
+    void SudokoBoard::getBoxMissings(int boxNr, std::vector<Element>& eleList)
+    {
+        //Element ele_s = _listElements[ele];
+        int row = 0;
+        int col = 0;
+        switch (boxNr)
+        {
+        case 1:
+            row = 3;
+            col = 3;
+            break;
+        case 2:
+            row = 3;
+            col = 6;
+            break;
+        case 3:
+            row = 3;
+            col = 9;
+            break;
+        case 4:
+            row = 6;
+            col = 3;
+            break;
+        case 5:
+            row = 6;
+            col = 6;
+            break;
+        case 6:
+            row = 6;
+            col = 9;
+            break;
+        case 7:
+            row = 9;
+            col = 3;
+            break;
+        case 8:
+            row = 9;
+            col = 6;
+            break;
+        case 9:
+            row = 9;
+            col = 9;
+            break;
+        }
+
+        for (char el = '1'; el <= '9'; el++)
+        {
+            Element ele_s = _listElements[el];
+            std::pair<int, int> lc(-1, 1);
+            for (auto loc : ele_s.loc_empty)
+            {
+                if (loc.first >= row-2 && loc.first <= row  )
+                {
+                    if (loc.second >= col - 2 && loc.second <= col)
+                    {
+                        eleList.push_back(ele_s);
+                        break;
+                    }
+                    
+                }
+            }
+        }
+    }
+
     int SudokoBoard::solve()
     {
         int result = 1;
@@ -249,32 +506,75 @@ namespace Sudoko
         int res = 0;
         //Loop until element is solved or not solvabale
         bool cont = true;
+        std::cout << "Solving for: " << ele<<std::endl;
         while (cont)
         {
             //Backup the _listElements
             std::map<char, Element> backup = _listElements;
             //Get the empty location
             Element le = _listElements[ele];
-            int i = le.getNextEmptyLoc();
-            //Fill the location
-            le.fillLoc(i);
-            _listElements[ele] = le;
-            //Export
-            exportState(ele);
-            //Import
-            res = solve();
-            if (res == 0 || res == -1)
+            std::cout << "Number of fixed Pos: " << le.loc_fixed.size() << std::endl;;
+            std::cout << "Number of Possible positions: " << le.loc_empty.size() << std::endl;
+            if (res = checkSolutionExist() == -1)
             {
-                cont = false;
+                return -1;
             }
-            if (res == -1)
+            if (res == 0)
             {
-                //Solvable point reached. No more tries possible now. Solve for other elements required.
-                //restore
-                _listElements = backup;
+                return 0;
+            }
+            int i = le.getNextEmptyLoc();
+            std::cout << "Next empty location : " << i << std::endl;
+            if (i != -1)
+            {
+                //Fill the location
+                le.fillLoc(i);
+                _listElements[ele] = le;
+                //Export
+                exportState(ele);
+                //Import
+                res = importState(ele);
+                res = solve();
+                //print();
+                if (res == 0)
+                {
+                    cont = false;
+                }
+                else
+                {
+                    //res = solMat();
+                }
+            }
+            else
+            {
+                res = -1;
             }
         }
-
         return res;
+    }
+
+    int SudokoBoard::solMat()
+    {
+        int res = 0;
+        std::vector<char> lowestRankers;
+        int rank = getLowestRankers(lowestRankers);
+        std::cout << "Lowest Rank = " << rank;
+        for (auto x : lowestRankers)
+        {
+            std::cout << "Solving for: " << x << std::endl;
+            res = solve(x);
+            print();
+        }
+        
+        print();
+        if (res == 0 || res == -1)
+        {
+            return res;
+        }
+
+    }
+    int SudokoBoard::checkSolutionExist()
+    {
+        return calculateState();
     }
 }

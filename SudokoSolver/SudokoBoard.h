@@ -45,12 +45,21 @@ namespace Sudoko
 
         bool elementCanExistAt(char ele, std::pair<int, int>& loc);
 
+        void fillPos(char ele, std::pair<int, int>& loc);
+
         //Elements with lowest rank should be solved first
         int getLowestRankers(std::vector<char>& result);
-
+        int getPossiblePositions(char ele, std::vector<std::pair<int,int>>& rPos);
         int solve();
         int solve(char ele);
+        int checkSolutionExist();
+        void barPosition(char ele, std::pair<int, int>& loc);
+        int getBoxNumber(std::pair<int, int>& pos);
+        std::pair<int, int> checkBoxContains(int boxNr,char ele);
+        void getBoxMissings(int boxNr,std::vector<Element>& eleList);
 
+
+        int solMat();
         ~SudokoBoard()
         {
 
